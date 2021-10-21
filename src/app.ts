@@ -15,6 +15,7 @@ interface newLineParams{
     isDrawing: boolean
 }
 
+
 const app = express();
 
 const server = http.createServer(app);
@@ -26,6 +27,7 @@ let oldestSocket: Socket| null;
 
 let latestImgData: ImageData | null;
 
+
 app.get('/', (req, res)=>{
     return res.sendFile(__dirname + '/view/index.html');
 })
@@ -33,7 +35,8 @@ app.get('/', (req, res)=>{
 io.on('connection', (socket) => {
     console.log('a user connected: ' + socket.id);
 
-    let isDrawing: boolean = false;
+    let lines: (drawLineCoords | null)[] = [];
+    let totalLines: number = 0;
 
     connectedSockets.push(socket);
 
@@ -51,6 +54,29 @@ io.on('connection', (socket) => {
         });
     } 
 
+    socket.on('new line', ({isDrawing, coords}: newLineParams)=>{
+        lines.push({
+            x1: coords.x1, 
+            y1: coords.y1, 
+            x2: coords.x2, 
+            y2: coords.y2
+        }); 
+
+        if(!isDrawing){
+            lines.push(null);
+
+            totalLines++;
+        }
+        
+        io.emit('draw line', {
+            x1: coords.x1, 
+            y1: coords.y1, 
+            x2: coords.x2, 
+            y2: coords.y2
+        });
+    })
+
+
     socket.on('disconnect', ()=>{
         console.log('a user disconnected: ' + socket.id);
 
@@ -59,15 +85,8 @@ io.on('connection', (socket) => {
 
         if(index === 0){
             oldestSocket = connectedSockets[0];
-        }
-        
+        }       
     })
-
-    socket.on('new line', ({x1, y1, x2, y2}: drawLineCoords)=>{
-        io.emit('draw line', {x1, y1, x2, y2});
-    })
-
-
 });
 
 server.listen(3000, ()=>{

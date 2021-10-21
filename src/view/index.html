@@ -2,7 +2,6 @@
 <html>
     <head>
     <title>Collaborative Drawing App</title>
-    <link rel="stylesheet" href="./styles.css">
     <style>
     #tela{
         border: 1px solid black;
@@ -10,7 +9,7 @@
     </style>
     </head>
     <body>
-        <canvas id='tela' width="450" height="300">
+        <canvas id='tela' width="900" height="600">
     </body>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -23,32 +22,23 @@
         let canvas = document.getElementById('tela');
         const ctx = canvas.getContext('2d');
 
+
         socket.on('draw line', ({x1, y1, x2, y2})=>{            
             drawLine(ctx, x1, y1, x2, y2);
         })
 
         socket.on('request current canvas', (callback)=>{               
-            console.log('canvas requested');
-
             callback({imgData: ctx.getImageData(0, 0, canvas.width, canvas.height)});
         })
 
-        socket.on('emit on disconect', (callback)=>{               
-            callback({response: 'testes'});
-        })
         
-        socket.on('send current canvas content', (data)=>{     
-            console.log("att o canvas");
-
-            console.log(ctx.getImageData(0, 0, canvas.width, canvas.height));
-
+        socket.on('send current canvas content', (data)=>{   
             let imgData = new ImageData(new Uint8ClampedArray(data), canvas.width, canvas.height);
 
             ctx.putImageData(imgData, 0, 0);
         })
 
-
-
+        
         canvas.addEventListener('mousedown', e => {
             x = e.offsetX;
             y = e.offsetY;
@@ -58,8 +48,7 @@
 
         canvas.addEventListener('mousemove', e => {
             if(isDrawing){
-                //drawLine(ctx, x, y, e.offsetX, e.offsetY);
-                emitLineCoords(x, y, e.offsetX, e.offsetY);
+                emitLineCoords(isDrawing, x, y, e.offsetX, e.offsetY);
 
                 x = e.offsetX;
                 y = e.offsetY;
@@ -68,20 +57,12 @@
 
         window.addEventListener('mouseup', e => {
             if(isDrawing){
-                //drawLine(ctx, x, y, e.offsetX, e.offsetY);
-                emitLineCoords(x, y, e.offsetX, e.offsetY);
+                isDrawing = false;
+
+                emitLineCoords(isDrawing, x, y, e.offsetX, e.offsetY);
 
                 x = 0;
                 y = 0;
-
-                isDrawing = false;
-            }
-        });
-
-        window.addEventListener("keydown", event => {
-            if (event.isComposing || event.keyCode === 90) {
-
-                return;
             }
         });
 
@@ -95,8 +76,10 @@
             context.closePath();
         }
 
-        function emitLineCoords(x1, y1, x2, y2){
-            socket.emit('new line', {x1, y1, x2, y2});
+        function emitLineCoords(isDrawing, x1, y1, x2, y2){
+            let coords = {x1, y1, x2, y2};
+
+            socket.emit('new line', {isDrawing, coords});
         }
 
     </script>
