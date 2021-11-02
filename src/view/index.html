@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -6,10 +7,21 @@
     #tela{
         border: 1px solid black;
     }
+
+    #tela:hover{
+        cursor: url('/assets/pencil.png') 1 22, auto;
+    }
+
+    .cursor {
+        position: absolute;
+        pointer-events: none;
+        user-select: none;
+    }
+
     </style>
     </head>
     <body>
-        <canvas id='tela' width="900" height="600">
+        <canvas id='tela' width="500" height="325">
     </body>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -17,28 +29,71 @@
         var socket = io();
 
         let isDrawing = false;
-        let x, y = 0;
+        let x = 0; 
+        let y = 0;
+        
+        let id;
+
+        let connectedIds = [];
 
         let canvas = document.getElementById('tela');
         const ctx = canvas.getContext('2d');
 
-
-        socket.on('draw line', ({x1, y1, x2, y2})=>{            
-            drawLine(ctx, x1, y1, x2, y2);
+        socket.on('draw line', ({x1, y1, x2, y2, color})=>{            
+            drawLine(ctx, x1, y1, x2, y2, color);
         })
+
+        
+        socket.on('user connected', data => {
+            id = data.id;
+            connectedIds = data.connectedIds;
+
+            console.log(connectedIds);
+
+            
+            connectedIds.forEach(connectedId => {
+                if(connectedId !== id){
+                    createCursorElement(connectedId);
+                }
+            });
+            
+        
+            sendMouseCoords();
+        })
+
+        socket.on('new user connected', id => {
+            connectedIds.push(id);
+            
+            // Add new cursor html
+            createCursorElement(id)
+        })
+
+        socket.on('user disconnected', id =>{   
+            let index = connectedIds.indexOf(id);
+            connectedIds.splice(index, 1); 
+
+            document.getElementById("cursor-" + id).remove();
+        })
+
 
         socket.on('request current canvas', (callback)=>{               
             callback({imgData: ctx.getImageData(0, 0, canvas.width, canvas.height)});
         })
-
-        
         socket.on('send current canvas content', (data)=>{   
             let imgData = new ImageData(new Uint8ClampedArray(data), canvas.width, canvas.height);
 
             ctx.putImageData(imgData, 0, 0);
         })
 
-        
+        socket.on('mouse coords', (data)=>{   
+            let cursor = document.getElementById("cursor-" + data.id);
+
+            cursor.style.left = `${data.x + 6}px`;
+            cursor.style.top =  `${data.y - 14}px`;
+        })
+
+
+        /// Canvas drawing
         canvas.addEventListener('mousedown', e => {
             x = e.offsetX;
             y = e.offsetY;
@@ -49,10 +104,10 @@
         canvas.addEventListener('mousemove', e => {
             if(isDrawing){
                 emitLineCoords(isDrawing, x, y, e.offsetX, e.offsetY);
-
-                x = e.offsetX;
-                y = e.offsetY;
             }
+
+            x = e.offsetX;
+            y = e.offsetY;
         });
 
         window.addEventListener('mouseup', e => {
@@ -60,15 +115,14 @@
                 isDrawing = false;
 
                 emitLineCoords(isDrawing, x, y, e.offsetX, e.offsetY);
-
-                x = 0;
-                y = 0;
             }
         });
 
-        function drawLine(context, x1, y1, x2, y2) {
+
+        /// Functions
+        function drawLine(context, x1, y1, x2, y2, color) {
             context.beginPath();
-                context.strokeStyle = 'black';
+                context.strokeStyle = color;
                 context.lineWidth = 1;
                 context.moveTo(x1, y1);
                 context.lineTo(x2, y2);
@@ -81,6 +135,28 @@
 
             socket.emit('new line', {isDrawing, coords});
         }
+
+        
+
+        function sendMouseCoords() {
+            socket.emit('update mouse coords', {x:x, y:y, id: id});
+
+            setTimeout(() => sendMouseCoords(), 100);
+        }
+
+        function createCursorElement(id){   
+            var pencilImg = new Image();
+            pencilImg.src = "/assets/pencil.png";
+
+            let cursor = document.createElement('div');
+            cursor.id = 'cursor-'+id;
+            cursor.className = 'cursor';
+            cursor.appendChild(pencilImg);
+            
+            document.body.appendChild(cursor);
+        }
+        
+        
 
     </script>
 </html>

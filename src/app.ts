@@ -3,11 +3,14 @@ import express from 'express';
 import {Server, Socket} from 'socket.io';
 import http from 'http';
 
+import path from 'path';
+
 interface drawLineCoords{
-    x1: number;
-    y1: number; 
-    x2: number;
-    y2: number;
+    x1: number,
+    y1: number, 
+    x2: number,
+    y2: number,
+    color: string
 }
 
 interface newLineParams{
@@ -15,17 +18,30 @@ interface newLineParams{
     isDrawing: boolean
 }
 
+interface mouseCoords{
+    x: string,
+    y: string,
+    id: string
+}
+
+enum avaliableColors{
+    Black = 'black',
+    Red = 'red',
+    Blue = 'blue',
+    Pink = 'pink',
+    Green = 'green'
+}
 
 const app = express();
+
+app.use('/assets', express.static(path.join(path.resolve(__dirname, '..', 'public', 'assets'))));
 
 const server = http.createServer(app);
 const io = new Server(server);
 
 const connectedSockets: Socket[] = [];
 
-let oldestSocket: Socket| null;
-
-let latestImgData: ImageData | null;
+//let latestImgData: ImageData | null;
 
 
 app.get('/', (req, res)=>{
@@ -38,28 +54,37 @@ io.on('connection', (socket) => {
     let lines: (drawLineCoords | null)[] = [];
     let totalLines: number = 0;
 
+    
+    let color = avaliableColors.Black;
+
     connectedSockets.push(socket);
 
-    if(connectedSockets.length === 1 && latestImgData){
-        socket.emit('send current canvas content', (latestImgData));
+    socket.emit('user connected', {
+        id: socket.id,
+        connectedIds: connectedSockets.map(user => user.id),
+    });
+
+    socket.broadcast.emit('new user connected', socket.id);
+
+
+    if(connectedSockets.length === 1){
+        //socket.emit('send current canvas content', (latestImgData));
     }
+    else{
+        connectedSockets[0].emit('request current canvas', (response: any)=>{
+            //latestImgData = response.imgData.data;
 
-    if(!oldestSocket){
-        oldestSocket = socket;
-    } else {
-        oldestSocket.emit('request current canvas', (response: any)=>{
-            latestImgData = response.imgData.data;
-
-            socket.emit('send current canvas content', (latestImgData));
+            socket.emit('send current canvas content', (response.imgData.data));
         });
-    } 
+    }
 
     socket.on('new line', ({isDrawing, coords}: newLineParams)=>{
         lines.push({
             x1: coords.x1, 
             y1: coords.y1, 
             x2: coords.x2, 
-            y2: coords.y2
+            y2: coords.y2,
+            color
         }); 
 
         if(!isDrawing){
@@ -72,20 +97,25 @@ io.on('connection', (socket) => {
             x1: coords.x1, 
             y1: coords.y1, 
             x2: coords.x2, 
-            y2: coords.y2
+            y2: coords.y2,
+            color
         });
     })
+
+    socket.on('update mouse coords', ({x, y, id}:mouseCoords) => {
+        //console.log(`X: ${x} | Y: ${y}`);
+
+        socket.broadcast.emit('mouse coords', {x, y, id});
+    });
 
 
     socket.on('disconnect', ()=>{
         console.log('a user disconnected: ' + socket.id);
 
-        const index = connectedSockets.indexOf(socket);
-        connectedSockets.splice(index, 1)
+        socket.broadcast.emit('user disconnected', socket.id);
 
-        if(index === 0){
-            oldestSocket = connectedSockets[0];
-        }       
+        const index = connectedSockets.indexOf(socket);
+        connectedSockets.splice(index, 1);    
     })
 });
 
