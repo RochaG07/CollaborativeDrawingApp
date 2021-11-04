@@ -21,7 +21,6 @@ interface newLineParams{
 interface mouseCoords{
     x: string,
     y: string,
-    id: string
 }
 
 enum avaliableColors{
@@ -34,7 +33,6 @@ enum avaliableColors{
 
 const app = express();
 
-app.use('/assets', express.static(path.join(path.resolve(__dirname, '..', 'public', 'assets'))));
 
 const server = http.createServer(app);
 const io = new Server(server);
@@ -43,6 +41,7 @@ const connectedSockets: Socket[] = [];
 
 //let latestImgData: ImageData | null;
 
+app.use('/assets', express.static(path.join(path.resolve(__dirname, '..', 'public', 'assets'))));
 
 app.get('/', (req, res)=>{
     return res.sendFile(__dirname + '/view/index.html');
@@ -53,11 +52,11 @@ io.on('connection', (socket) => {
 
     let lines: (drawLineCoords | null)[] = [];
     let totalLines: number = 0;
-
     
-    let color = avaliableColors.Black;
+    let drawColor = avaliableColors.Black;
 
     connectedSockets.push(socket);
+
 
     socket.emit('user connected', {
         id: socket.id,
@@ -66,11 +65,7 @@ io.on('connection', (socket) => {
 
     socket.broadcast.emit('new user connected', socket.id);
 
-
-    if(connectedSockets.length === 1){
-        //socket.emit('send current canvas content', (latestImgData));
-    }
-    else{
+    if(connectedSockets.length > 0){
         connectedSockets[0].emit('request current canvas', (response: any)=>{
             //latestImgData = response.imgData.data;
 
@@ -84,7 +79,7 @@ io.on('connection', (socket) => {
             y1: coords.y1, 
             x2: coords.x2, 
             y2: coords.y2,
-            color
+            color: drawColor
         }); 
 
         if(!isDrawing){
@@ -98,16 +93,27 @@ io.on('connection', (socket) => {
             y1: coords.y1, 
             x2: coords.x2, 
             y2: coords.y2,
-            color
+            color: drawColor
         });
     })
 
-    socket.on('update mouse coords', ({x, y, id}:mouseCoords) => {
+    socket.on('update mouse coords', ({x, y}:mouseCoords) => {
         //console.log(`X: ${x} | Y: ${y}`);
 
-        socket.broadcast.emit('mouse coords', {x, y, id});
+        socket.broadcast.emit('mouse coords', {
+            id: socket.id,
+            x,
+            y
+        });
     });
 
+    socket.on('clear canvas', () => {
+        socket.broadcast.emit('clear canvas');
+    })
+
+    socket.on('pick color', (color: avaliableColors) => {
+        drawColor = color;
+    })
 
     socket.on('disconnect', ()=>{
         console.log('a user disconnected: ' + socket.id);
@@ -118,7 +124,5 @@ io.on('connection', (socket) => {
         connectedSockets.splice(index, 1);    
     })
 });
-
-server.listen(3000, ()=>{
-    console.log('Listening to port 3000');
-});
+ 
+export {server};

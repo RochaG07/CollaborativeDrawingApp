@@ -6,10 +6,7 @@
     <style>
     #tela{
         border: 1px solid black;
-    }
-
-    #tela:hover{
-        cursor: url('/assets/pencil.png') 1 22, auto;
+        cursor: url('/assets/pencil-black.png') 1 22, auto;
     }
 
     .cursor {
@@ -21,7 +18,16 @@
     </style>
     </head>
     <body>
+        <button onclick="handlePickColor('black')">Black</button>
+        <button onclick="handlePickColor('blue')">Blue</button>
+        <button onclick="handlePickColor('red')">Red</button>
+        <button onclick="handlePickColor('green')">Green</button>
+        <button onclick="handlePickColor('pink')">Pink</button>
+        <button onclick="handleClearCanvas()">Clear canvas</button>
+        <br>
+
         <canvas id='tela' width="500" height="325">
+
     </body>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -47,16 +53,12 @@
         socket.on('user connected', data => {
             id = data.id;
             connectedIds = data.connectedIds;
-
-            console.log(connectedIds);
-
             
             connectedIds.forEach(connectedId => {
                 if(connectedId !== id){
                     createCursorElement(connectedId);
                 }
             });
-            
         
             sendMouseCoords();
         })
@@ -64,7 +66,6 @@
         socket.on('new user connected', id => {
             connectedIds.push(id);
             
-            // Add new cursor html
             createCursorElement(id)
         })
 
@@ -88,10 +89,11 @@
         socket.on('mouse coords', (data)=>{   
             let cursor = document.getElementById("cursor-" + data.id);
 
-            cursor.style.left = `${data.x + 6}px`;
-            cursor.style.top =  `${data.y - 14}px`;
+            cursor.style.left = `${data.x}px`;
+            cursor.style.top =  `${data.y}px`;
         })
 
+        socket.on('clear canvas', () => clearCanvas());
 
         /// Canvas drawing
         canvas.addEventListener('mousedown', e => {
@@ -135,11 +137,16 @@
 
             socket.emit('new line', {isDrawing, coords});
         }
-
         
 
         function sendMouseCoords() {
-            socket.emit('update mouse coords', {x:x, y:y, id: id});
+            let xOffset = window.pageXOffset + canvas.getBoundingClientRect().left;
+            let yOffset = window.pageYOffset + canvas.getBoundingClientRect().top;
+
+            socket.emit('update mouse coords', {
+                x: x + xOffset, 
+                y: y + yOffset - 21  
+            });
 
             setTimeout(() => sendMouseCoords(), 100);
         }
@@ -155,8 +162,25 @@
             
             document.body.appendChild(cursor);
         }
-        
-        
+
+        function handleClearCanvas(){
+            clearCanvas();
+
+            socket.emit('clear canvas');
+        }
+        function clearCanvas(){
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function handlePickColor(color){
+            changeCursorColor(color);
+
+            socket.emit('pick color', color);
+        }
+
+        function changeCursorColor(color){
+            document.getElementById("tela").style.cursor = "url('/assets/pencil-"+color+".png') 1 22, auto";
+        }
 
     </script>
 </html>
