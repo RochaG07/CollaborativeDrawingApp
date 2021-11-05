@@ -63,10 +63,12 @@
             sendMouseCoords();
         })
 
-        socket.on('new user connected', id => {
-            connectedIds.push(id);
+        socket.on('new user connected', data => {
+            console.log(data);
+
+            connectedIds.push(data.id);
             
-            createCursorElement(id)
+            createCursorElement(data.id);
         })
 
         socket.on('user disconnected', id =>{   
@@ -94,6 +96,9 @@
         })
 
         socket.on('clear canvas', () => clearCanvas());
+
+        socket.on('color change', data => changeCursorColor(data.id, data.color));
+
 
         /// Canvas drawing
         canvas.addEventListener('mousedown', e => {
@@ -153,7 +158,7 @@
 
         function createCursorElement(id){   
             var pencilImg = new Image();
-            pencilImg.src = "/assets/pencil.png";
+            pencilImg.src = "/assets/pencil-black.png";
 
             let cursor = document.createElement('div');
             cursor.id = 'cursor-'+id;
@@ -173,13 +178,18 @@
         }
 
         function handlePickColor(color){
-            changeCursorColor(color);
+            changeOwnCursorColor(color);
 
             socket.emit('pick color', color);
         }
 
-        function changeCursorColor(color){
+        function changeOwnCursorColor(color){
             document.getElementById("tela").style.cursor = "url('/assets/pencil-"+color+".png') 1 22, auto";
+        }
+
+        function changeCursorColor(id, color){
+
+            document.getElementById("cursor-" + id).children[0].src = "/assets/pencil-"+color+".png";
         }
 
     </script>

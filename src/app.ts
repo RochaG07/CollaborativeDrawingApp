@@ -23,6 +23,11 @@ interface mouseCoords{
     y: string,
 }
 
+interface connectedClients{
+    socket: Socket,
+    color: string,
+}
+
 enum avaliableColors{
     Black = 'black',
     Red = 'red',
@@ -57,13 +62,16 @@ io.on('connection', (socket) => {
 
     connectedSockets.push(socket);
 
-
     socket.emit('user connected', {
         id: socket.id,
         connectedIds: connectedSockets.map(user => user.id),
+
     });
 
-    socket.broadcast.emit('new user connected', socket.id);
+    socket.broadcast.emit('new user connected', {
+        id: socket.id,
+    });
+
 
     if(connectedSockets.length > 0){
         connectedSockets[0].emit('request current canvas', (response: any)=>{
@@ -113,6 +121,11 @@ io.on('connection', (socket) => {
 
     socket.on('pick color', (color: avaliableColors) => {
         drawColor = color;
+
+        socket.broadcast.emit('color change', {
+            id: socket.id,
+            color,
+        });
     })
 
     socket.on('disconnect', ()=>{
@@ -121,6 +134,8 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('user disconnected', socket.id);
 
         const index = connectedSockets.indexOf(socket);
+
+        
         connectedSockets.splice(index, 1);    
     })
 });
