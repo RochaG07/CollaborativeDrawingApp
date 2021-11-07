@@ -41,6 +41,7 @@
         let id;
 
         let connectedIds = [];
+        let connectedIdsColor = [];
 
         let canvas = document.getElementById('tela');
         const ctx = canvas.getContext('2d');
@@ -52,14 +53,16 @@
         
         socket.on('user connected', data => {
             id = data.id;
-            connectedIds = data.connectedIds;
+
+            connectedIds = data.connectedClients.id;
+            connectedIdsColors = data.connectedClients.color;
             
-            connectedIds.forEach(connectedId => {
+            connectedIds.forEach((connectedId, index) => {
                 if(connectedId !== id){
-                    createCursorElement(connectedId);
+                    createCursorElement(connectedId, connectedIdsColors[index]);
                 }
             });
-        
+            
             sendMouseCoords();
         })
 
@@ -67,13 +70,16 @@
             console.log(data);
 
             connectedIds.push(data.id);
+            connectedIdsColor.push(data.color);
             
-            createCursorElement(data.id);
+            createCursorElement(data.id, data.color);
         })
 
         socket.on('user disconnected', id =>{   
             let index = connectedIds.indexOf(id);
+
             connectedIds.splice(index, 1); 
+            connectedIdsColor.splice(index, 1);
 
             document.getElementById("cursor-" + id).remove();
         })
@@ -156,9 +162,9 @@
             setTimeout(() => sendMouseCoords(), 100);
         }
 
-        function createCursorElement(id){   
+        function createCursorElement(id, color){   
             var pencilImg = new Image();
-            pencilImg.src = "/assets/pencil-black.png";
+            pencilImg.src = "/assets/pencil-"+color+".png";
 
             let cursor = document.createElement('div');
             cursor.id = 'cursor-'+id;

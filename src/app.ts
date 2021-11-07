@@ -38,13 +38,10 @@ enum avaliableColors{
 
 const app = express();
 
-
 const server = http.createServer(app);
 const io = new Server(server);
 
-const connectedSockets: Socket[] = [];
-
-//let latestImgData: ImageData | null;
+const connectedClients: connectedClients[] = [];
 
 app.use('/assets', express.static(path.join(path.resolve(__dirname, '..', 'public', 'assets'))));
 
@@ -60,23 +57,27 @@ io.on('connection', (socket) => {
     
     let drawColor = avaliableColors.Black;
 
-    connectedSockets.push(socket);
+    connectedClients.push({
+        socket,
+        color: drawColor
+    });
 
     socket.emit('user connected', {
         id: socket.id,
-        connectedIds: connectedSockets.map(user => user.id),
-
+        connectedClients: {
+            id: connectedClients.map(client => client.socket.id),
+            color: connectedClients.map(client => client.color)
+        }
     });
 
     socket.broadcast.emit('new user connected', {
         id: socket.id,
+        color: drawColor
     });
 
 
-    if(connectedSockets.length > 0){
-        connectedSockets[0].emit('request current canvas', (response: any)=>{
-            //latestImgData = response.imgData.data;
-
+    if(connectedClients.length > 0){
+        connectedClients[0].socket.emit('request current canvas', (response: any)=>{
             socket.emit('send current canvas content', (response.imgData.data));
         });
     }
@@ -106,8 +107,6 @@ io.on('connection', (socket) => {
     })
 
     socket.on('update mouse coords', ({x, y}:mouseCoords) => {
-        //console.log(`X: ${x} | Y: ${y}`);
-
         socket.broadcast.emit('mouse coords', {
             id: socket.id,
             x,
@@ -122,6 +121,12 @@ io.on('connection', (socket) => {
     socket.on('pick color', (color: avaliableColors) => {
         drawColor = color;
 
+        //Change color in array 
+        let client = connectedClients.find(connectedClient => connectedClient.socket.id === socket.id);
+        if(client){
+            client.color = color;
+        }
+
         socket.broadcast.emit('color change', {
             id: socket.id,
             color,
@@ -133,10 +138,9 @@ io.on('connection', (socket) => {
 
         socket.broadcast.emit('user disconnected', socket.id);
 
-        const index = connectedSockets.indexOf(socket);
+        const index = connectedClients.map((client) => client.socket).indexOf(socket);
 
-        
-        connectedSockets.splice(index, 1);    
+        connectedClients.splice(index, 1);    
     })
 });
  
