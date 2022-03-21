@@ -1,5 +1,5 @@
 
-**Gif de funcionamento aqui**
+[preview](https://github.com/RochaG07/CollaborativeDrawingApp/tree/master/media/preview.gif)
 
 ## Indice
 
@@ -11,16 +11,18 @@
 
 ## 📋Sobre
 
+Site que possibilita que seus visitantes possam desenhar em um canvas compartilhado.
 
 ---
 
 ## 📌Tecnologias utilizadas
 
-O backend do projeto foi desenvolvido utilizando as seguintes tecnologias:
+O projeto foi desenvolvido utilizando as seguintes tecnologias:
 
 - NodeJs
 - Typescript
 - Express
+- Socket.io
 
 
 ---
@@ -28,5 +30,12 @@ O backend do projeto foi desenvolvido utilizando as seguintes tecnologias:
 ## Como baixar o projeto
 
 ```jsx
+#Clonar o repositório
+$ git clone https://github.com/RochaG07/CollaborativeDrawingApp
 
+#Instalar as dependências
+$ yarn add
+
+#Iniciar o servidor
+$ yarn server
 ```
