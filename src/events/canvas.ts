@@ -53,12 +53,6 @@ function canvas(io: Server, user: User) {
         });
     });
 
-    user.socket.on('undo',  () => {
-        
-
-
-    })
-
     user.socket.on('clear canvas', () => {
         user.socket.broadcast.emit('clear canvas');
     })

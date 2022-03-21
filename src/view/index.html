@@ -12,8 +12,6 @@
             }
             body{
                 background-color: #ddd;
-
-                
             }
 
             #header{
@@ -22,10 +20,14 @@
 
                 padding: 1% 0 1% 0;
                 flex-direction: column;
-                justify-content: center;
-                
-                
+                justify-content: center;   
+
+                transition: all .4s ease;
             }
+            #header:hover{
+                background-color: rgba(0,0,0,.25);
+            }
+   
             #toolAndColorSelection{
                 margin: auto;
             }
@@ -76,7 +78,7 @@
                 width: 100%;
                 background-color: rgba(0,0,0,.15);
             }
-   
+
         </style>
     </head>
     <body>
@@ -99,10 +101,14 @@
             <canvas id='tela' width="500" height="325">
         </div>
 
+        <!--
         <div id="footer">
             <div id="devMenu"></div>
             <button onclick="handleClearCanvas()">Clear canvas</button>
         </div>
+        -->
+
+
     </body>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -208,18 +214,19 @@
             }
         });
 
-        window.addEventListener('keydown', e => {
-            if(e.keyCode === 90){
-                socket.emit("undo");
-            }
-        });
-
-
         /// Functions
         function drawLine(context, x1, y1, x2, y2, color) {
+            let lineWidth;
+
+            if(color === "white"){
+                context.lineWidth = 25;
+            } else {
+                context.lineWidth = 1;
+            }
+
             context.beginPath();
                 context.strokeStyle = color;
-                context.lineWidth = 1;
+                context.lineWidth = lineWidth;
                 context.moveTo(x1, y1);
                 context.lineTo(x2, y2);
                 context.stroke();
@@ -249,6 +256,10 @@
             var pencilImg = new Image();
             pencilImg.src = "/assets/pencil-"+color+".png";
 
+            if(color === "white"){
+                pencilImg.src = "/assets/eraser.png";
+            }
+
             let cursor = document.createElement('div');
             cursor.id = 'cursor-'+id;
             cursor.className = 'cursor';
@@ -274,11 +285,20 @@
 
         function changeOwnCursorColor(color){
             document.getElementById("tela").style.cursor = "url('/assets/pencil-"+color+".png') 1 22, auto";
+
+            if(color === "white"){
+                document.getElementById("tela").style.cursor = "url('/assets/eraser.png') 1 22, auto";
+            }
         }
 
         function changeCursorColor(id, color){
 
             document.getElementById("cursor-" + id).children[0].src = "/assets/pencil-"+color+".png";
+
+            if(color === "white"){
+
+                document.getElementById("cursor-" + id).children[0].src = "/assets/eraser.png";
+            }
         }
 
     </script>
