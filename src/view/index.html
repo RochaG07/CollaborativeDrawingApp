@@ -2,32 +2,107 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <title>Collaborative Drawing App</title>
-    <style>
-    #tela{
-        border: 1px solid black;
-        cursor: url('/assets/pencil-black.png') 1 22, auto;
-    }
+        <title>Collaborative Drawing App</title>
+        <style>
+            *{
+                box-sizing: border-box;
 
-    .cursor {
-        position: absolute;
-        pointer-events: none;
-        user-select: none;
-    }
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                background-color: #ddd;
 
-    </style>
+                
+            }
+
+            #header{
+                display: flex;
+                background-color: rgba(0,0,0,.15);
+
+                padding: 1% 0 1% 0;
+                flex-direction: column;
+                justify-content: center;
+                
+                
+            }
+            #toolAndColorSelection{
+                margin: auto;
+            }
+            #toolAndColorSelection #firstRow{
+                margin-bottom: 4px;
+            }
+            #toolAndColorSelection button{
+                height: 40px;
+                width: 40px;
+                
+                padding: 4px 12px;
+            }
+
+
+            #content{
+                margin-top: 10%;    
+            }
+            #tela{
+                background-color: white;
+
+                border-radius: 0% 0% 0% 0% / 0% 0% 0% 0% ;
+                box-shadow: 20px 20px rgba(0,0,0,.15);
+
+                padding-left: 0;
+                padding-right: 0;
+                margin-left: auto;
+                margin-right: auto;
+                display: block;
+
+                transition: all .4s ease;
+
+                cursor: url('/assets/pencil-black.png') 1 22, auto;
+            }
+            #tela:hover{
+                box-shadow: 10px 10px rgba(0,0,0,.25);
+            }
+            .cursor {
+                position: absolute;
+                pointer-events: none;
+                user-select: none;
+            }
+            
+
+            #footer{
+                position:absolute; 
+                bottom:0;
+
+                width: 100%;
+                background-color: rgba(0,0,0,.15);
+            }
+   
+        </style>
     </head>
     <body>
-        <button onclick="handlePickColor('black')">Black</button>
-        <button onclick="handlePickColor('blue')">Blue</button>
-        <button onclick="handlePickColor('red')">Red</button>
-        <button onclick="handlePickColor('green')">Green</button>
-        <button onclick="handlePickColor('pink')">Pink</button>
-        <button onclick="handleClearCanvas()">Clear canvas</button>
-        <br>
+        <div id="header">
+            <div id="toolAndColorSelection">
+                <div id='firstRow'>
+                    <button onclick="handlePickColor('black')" style="background-color: black;"></button>
+                    <button onclick="handlePickColor('blue')" style="background-color: blue;"></button>
+                    <button onclick="handlePickColor('red')" style="background-color: red;"></button>
+                </div>
+                <div id='secondRow'>
+                    <button onclick="handlePickColor('green')" style="background-color: green;"></button>
+                    <button onclick="handlePickColor('pink')" style="background-color: pink;"></button>
+                    <button onclick="handlePickColor('white')" style="background-color: white;"></button>
+                </div>
+            </div>
+        </div>
 
-        <canvas id='tela' width="500" height="325">
+        <div id="content">
+            <canvas id='tela' width="500" height="325">
+        </div>
 
+        <div id="footer">
+            <div id="devMenu"></div>
+            <button onclick="handleClearCanvas()">Clear canvas</button>
+        </div>
     </body>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -42,6 +117,7 @@
 
         let connectedIds = [];
         let connectedIdsColor = [];
+        
 
         let canvas = document.getElementById('tela');
         const ctx = canvas.getContext('2d');
@@ -105,7 +181,7 @@
 
         socket.on('color change', data => changeCursorColor(data.id, data.color));
 
-
+        
         /// Canvas drawing
         canvas.addEventListener('mousedown', e => {
             x = e.offsetX;
@@ -115,7 +191,7 @@
         });
 
         canvas.addEventListener('mousemove', e => {
-            if(isDrawing){
+            if(isDrawing){     
                 emitLineCoords(isDrawing, x, y, e.offsetX, e.offsetY);
             }
 
@@ -128,6 +204,13 @@
                 isDrawing = false;
 
                 emitLineCoords(isDrawing, x, y, e.offsetX, e.offsetY);
+
+            }
+        });
+
+        window.addEventListener('keydown', e => {
+            if(e.keyCode === 90){
+                socket.emit("undo");
             }
         });
 
