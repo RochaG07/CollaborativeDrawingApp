@@ -1,5 +1,5 @@
 
-[preview](https://github.com/RochaG07/CollaborativeDrawingApp/tree/master/media/preview.gif)
+[](https://raw.githubusercontent.com/RochaG07/CollaborativeDrawingApp/master/media/preview.gif)
 
 ## Indice
 
